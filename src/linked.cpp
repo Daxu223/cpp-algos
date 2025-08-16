@@ -5,7 +5,6 @@ struct Node {
     int data;
     Node* next;
 
-    // Constructor
     Node(int data)
     {
         this->data = data;
@@ -25,7 +24,8 @@ int length_of_list(Node* head) {
     return counter;
 }
 
-Node* insert_beginning(Node* head, int data) {
+// Return void because the changes are from the original address of head.
+void insert_beginning(Node*& head, int data) {
     // Create a pointer, that allocates data to the heap.
     // The object needs to persist beyond the function scope.
     Node* node = new Node(data);
@@ -33,41 +33,36 @@ Node* insert_beginning(Node* head, int data) {
     // Set the next pointer of the node to the current head.
     node->next = head;
     
-    // Move the head to point to the new node.
+    // Replace the original head with the new node that was just created.
     head = node;
-
-    // Return node, so we can inspect it further.
-    return node;
 }
 
-// Here we are passing a copy of a pointer, not the real list.
-// The modification won't reflect on the outside. The fix is to pass the address
-// of the pointer with reference with Node*& head
+void insert_back(Node*& head, int data) {
 
-// Other fix would be to return the updated head and assign it in main.
-void insert_back(Node* head, int data) {
-    // Create new node
-    Node* node = new Node(data);
-
-    // Check if list is empty. If list is empty, the new node is now the head.
+    // Check if list is empty
     if (head == nullptr) {
-        head = node;
+        head = new Node(data); // Creates a new head pointer 
+        return;
     }
 
     // and if not, traverse the list until last node is reached.
-    while (head->next != nullptr) {
-        head = head->next;
+    Node* current = head; // Make a temporary traversal node, so that the real head is not replaced.
+    while (current->next != nullptr) {
+        current = current->next;
     }
 
-    // cout << "DEBUG - Last node was: " << head->data << endl;
+    // cout << "DEBUG - Last node was: " << current->data << endl;
     
-    // Link the new node by setting the last node's next pointer to the new node.
-    head->next = node;
+    // At this point, we point the new node to after the last item in the linked list.
+    // We can now discard the copy of the pointer and the contents in memory are still changed.
+    current->next = new Node(data);
     
-    // cout << "DEBUG - Inserted (head->data): " << head->data << endl;
+    // cout << "DEBUG - Inserted ([last item]->data): " << current->data << endl;
+    return;
+
 }
 
-void insert_position(Node* head, int data, int position) {
+void insert_position(Node*& head, int data, int position) {
 
     // Check if insertion is possible before
     int listLength = length_of_list(head);
@@ -86,60 +81,60 @@ void insert_position(Node* head, int data, int position) {
         return;
     }
 
+    // Create a copy pointer from head: original linked list must not change during traversal.
+    Node* current = head;
+
+
     // Otherwise, traverse the list starting from head.
     // Stop just before the desired position.
     for (int i = 0; i < position - 1; i++) {
-        head = head->next;
+        current = current->next;
     }
 
-    // cout << "The current node that we want to alter is at: " << head->data << endl;
-    // cout << "The next node is at: " << head->next->data << endl;
+    // cout << "The current node that we want to alter is at: " << current->data << endl;
+    // cout << "The next node is at: " << current->next->data << endl;
 
     // Insert new node at the position
-    node->next = head->next; // Point the new node's next to the next node of current
+    node->next = current->next; // Point the new node's next to the next node of current
     // cout << "The data after the new node is: " << node->next->data << endl;
 
-    head->next = node; // Update previous node's next to the new node
-    // cout << "The data in the next node of previous is: " << head->next->data << endl;
+    current->next = node; // Update previous node's next to the new node
+    // cout << "The data in the next node of previous is: " << current->next->data << endl;
 
     return;
 
 }
 
-Node* delete_beginning(Node* head) {
-    // Return null if list is empty
+void delete_beginning(Node*& head) {
     if (head == nullptr) {
-        return nullptr;
+        return;
     }
 
     // Store the current head to a temporary node
-    Node* temp = head;
+    Node* current = head;
 
     // Move the head pointer to the next node
-    head = head->next;
+    head = current->next;
 
     // Remove the temporary variable from memory
-    delete temp;
+    delete current;
 
-    // Return the new head
-    return head;
-
+    return;
 }
 
-Node* delete_back(Node* head) {
-    // Check if list is empty
+void delete_back(Node*& head) {
     if (head == nullptr) {
-        return nullptr;
+        return;
     }
 
     // Check if there is only one node in the list
     if (head->next == nullptr) {
         delete head;
-        return nullptr;
+        return;
     }
 
     // Traverse the list to find the second last node
-    Node* second_last = head; // *create another "temp" node*
+    Node* second_last = head;
     while (second_last->next->next != nullptr) {
         second_last = second_last->next;
     }
@@ -148,39 +143,46 @@ Node* delete_back(Node* head) {
     delete second_last->next;
     second_last->next = nullptr;
 
-    return head;
+    return;
 }
 
-Node* delete_position(Node* head, int position) {
+void delete_position(Node*& head, int position) {
     if (head == nullptr) {
-        return head;
+        return;
     }
 
-    // Delete the head and return it
+    // If first position, delete the head and make the next one the head.
     if (position == 0) {
-        Node* temp = head;
+        Node* currentHead = head;
         head = head->next;
-        delete temp;
-        return head;
+        delete currentHead;
+        return;
     }
 
-    // Traverse to the node before the position
+    // Check if the deletion is valid.
     int listLength = length_of_list(head);
-    Node* temporary = head;
+    if (position > listLength) {
+        cout << "Cannot delete a node outside the bounds of the list" << endl;
+        return;
+    }
+    
+    // Traverse to the node before the desired position to delete.
+    Node* current = head; // Temporary traversal pointer
     for (int i = 0; i < position - 1; i++) {
-        if (position > listLength) {
-            cout << "Cannot delete a node outside the bounds of the list" << endl;
-            return head;
-        }
-
-        temporary = temporary->next;
-
+        current = current->next;
     }
 
-    temporary->next = temporary->next->next;
-    delete temporary;
+    // cout << "Node before the desired position: " << current->data << endl;
 
-    return head;
+    // Save node because current->next is not accessible after reassigning (see below)
+    Node* nodeToDelete = current->next;
+
+    // "Skip" the next of the deletable item to point to the the next item in list.
+    current->next = nodeToDelete->next;
+
+    delete nodeToDelete; // Delete the skipped item.
+
+    return;
 
 }
 
@@ -191,7 +193,7 @@ bool find_node(Node* head, int data) {
     while (head != nullptr) {
         // Check each node's data
         if (head->data == data) {
-            // cout << "Data found, returning true." << endl;
+            cout << "Data " << data << " found, returning true." << endl;
             return true;
         } else {
             head = head->next;
@@ -199,6 +201,7 @@ bool find_node(Node* head, int data) {
         }
     }
 
+    cout << "Data " << data << " was not found, returning false" << endl;
     return false;
 }
 
@@ -244,6 +247,17 @@ void reverse(Node*& head) {
     head = prev;
 }
 
+void free_list(Node*& head) {
+    while (head != nullptr) {
+        Node* temp = head;
+        head = head->next; 
+        delete temp;
+    }
+
+    cout << "Nodes freed." << endl;
+    return;
+}
+
 int main() {
     // TODO: allocating new nodes but these are never freed when the program ends.
     // TODO: Make the functions handle the original addresses of the pointers, not copies (&*Node)
@@ -256,18 +270,17 @@ int main() {
     head->next->next->next = new Node(40);
     head->next->next->next->next = new Node(50);
 
+    // Print length
+    cout << "The length of the initial list: " << length_of_list(head) << endl;
+
     // Print the current list starting from the head.
     cout << "Initial list: ";
     traverse(head);
     cout << endl;
 
-    // Print length
-    cout << "The length of the initial list: " << length_of_list(head) << endl;
-    cout << endl;
-
     // Insert front
     cout << "Inserting 0 to front: " << endl;
-    head = insert_beginning(head, 0);
+    insert_beginning(head, 0);
     traverse(head);
     cout << endl;
 
@@ -285,31 +298,26 @@ int main() {
     cout << endl;
 
     // Search the linked list and try to find a node.
+    cout << "Searching data: " << endl;
     int search = 100;
     bool result = find_node(head, search);
-    if (result) {
-        cout << "The searched data " << search << " was found!" << endl;
-    } else {
-        cout << "The searched data " << search << " was not found." << endl;
-    }
-
     cout << endl;
 
     // Delete front
     cout << "Deleting front: " << endl;
-    head = delete_beginning(head);
+    delete_beginning(head);
     traverse(head);
     cout << endl;
 
     // Delete back
     cout << "Deleting back: " << endl;
-    head = delete_back(head);
+    delete_back(head);
     traverse(head);
     cout << endl;
 
     // Delete at given position
     cout << "Delete at position 4: " << endl;
-    head = delete_position(head, 4);
+    delete_position(head, 4);
     traverse(head);
     cout << endl;
 
@@ -324,6 +332,11 @@ int main() {
     reverse(head);
     traverse(head);
     cout << endl;
+
+    
+    // Check if the list was deleted
+    cout << "Free list from existing with head = " << head->data << endl;
+    free_list(head);
 
     return 0;
 }
