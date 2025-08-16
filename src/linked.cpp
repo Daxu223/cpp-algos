@@ -259,11 +259,8 @@ void free_list(Node*& head) {
 }
 
 int main() {
-    // TODO: allocating new nodes but these are never freed when the program ends.
-    // TODO: Make the functions handle the original addresses of the pointers, not copies (&*Node)
-    // TODO: Test edge cases like empty lists and out of bounds positions.
 
-    // Initialize list
+    // Initialize list manually
     Node* head = new Node(10);
     head->next = new Node(20);
     head->next->next = new Node(30);
